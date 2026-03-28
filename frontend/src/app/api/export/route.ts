@@ -1,0 +1,112 @@
+import { NextRequest } from "next/server";
+
+// Transform frontend WorkflowState to Factory WorkflowConfig
+function transformToFactoryConfig(workflowState: any): any {
+  const agentsArray = Array.isArray(workflowState.agents)
+    ? workflowState.agents
+    : Object.values(workflowState.agents || {});
+
+  // Transform each agent to factory format
+  const factoryAgents = agentsArray.map((agent: any) => ({
+    name: agent.name || "Unnamed Agent",
+    persona: agent.instructions || agent.task || "AI Assistant",
+    output: agent.expected_output || "Provide a helpful response",
+    guidelines: agent.instructions || "",
+    mcp_servers: [], // Can be populated later if needed
+    toolkits: agent.tools || [], // Arcade toolkit names
+  }));
+
+  // Map relations to valid factory enum values
+  // Valid values: 'manager', 'chain', 'group-chat', 'triage', 'single'
+  let relationType = "single"; // default
+  const relations = workflowState.relations?.toLowerCase() || "";
+
+  if (relations.includes("manager") || relations.includes("delegate")) {
+    relationType = "manager";
+  } else if (relations.includes("chain") || relations.includes("sequential")) {
+    relationType = "chain";
+  } else if (relations.includes("group") || relations.includes("chat")) {
+    relationType = "group-chat";
+  } else if (relations.includes("triage") || relations.includes("handoff")) {
+    relationType = "triage";
+  } else if (agentsArray.length === 1) {
+    relationType = "single";
+  } else if (agentsArray.length > 1) {
+    // Default to manager for multiple agents
+    relationType = "manager";
+  }
+
+  return {
+    objective: workflowState.main_task || "Complete the user's task",
+    relations_type: relationType,
+    model_name: "groq/llama-3.3-70b-versatile",
+    // API key is injected server-side at deploy time to avoid persisting secrets.
+    api_key: "",
+    agents: factoryAgents,
+  };
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+
+    const { workflowState } = body || {};
+
+    if (!workflowState || typeof workflowState !== "object") {
+      return new Response(
+        JSON.stringify({ error: "workflowState is required" }),
+        { status: 400 },
+      );
+    }
+
+    const FACTORY_URL =
+      process.env.FACTORY_URL ||
+      "http://localhost:8001";
+    const FACTORY_TOKEN = process.env.FACTORY_TOKEN || "bearer-token-2024";
+
+    // Transform WorkflowState to Factory WorkflowConfig
+    const builtWorkflow = transformToFactoryConfig(workflowState);
+
+    // Verify the workflow with factory
+    const res = await fetch(`${FACTORY_URL}/verify/workflow`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${FACTORY_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(builtWorkflow),
+    });
+
+    const text = await res.text();
+    let data: any = null;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = { raw: text };
+    }
+
+    if (!res.ok) {
+      return new Response(
+        JSON.stringify({
+          error: "Factory verification failed",
+          status: res.status,
+          data,
+        }),
+        { status: 502 },
+      );
+    }
+
+    // Return the built workflow - client will handle Firestore write
+    return new Response(JSON.stringify({ success: true, builtWorkflow }), {
+      status: 200,
+    });
+  } catch (err: any) {
+    return new Response(
+      JSON.stringify({
+        error: "Internal error",
+        message: err?.message || String(err),
+      }),
+      { status: 500 },
+    );
+  }
+}
