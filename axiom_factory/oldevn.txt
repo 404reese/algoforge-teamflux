@@ -1,0 +1,7 @@
+ARCADE_API_KEY="arc_proj1B1Bwd96Py2ueUwx3u21Z2KSuHJcDYv4muuQg8avgpJzk6Y9Cma"
+# "arc_proj1B1Bwd96Py2ueUwx3u21Z2KSuHJcDYv4muuQg8avgpJzk6Y9Cma"
+
+ARCADE_BASE_URL=https://api.arcade.dev
+
+GROQ_API_KEY="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"
+GEMINI_API_KEY="AIzaSyDXRG0a7M1MbkMFRhtGJXrVvTy7Cgxm-1U"
