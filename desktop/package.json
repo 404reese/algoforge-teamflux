@@ -1,0 +1,21 @@
+{
+  "name": "axiom-desktop",
+  "version": "1.0.0",
+  "description": "made with love by reese",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "reese",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "latest"
+  },
+  "dependencies": {
+    "@google/genai": "^1.47.0",
+    "dotenv": "^17.3.1",
+    "playwright": "^1.58.2"
+  }
+}

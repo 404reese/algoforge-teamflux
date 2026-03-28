@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Axiom Desktop</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600&family=Instrument+Serif&family=Inter:wght@400;500;600&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar">
+      <h2>Axiom Desktop</h2>
+      <p class="sidebar-note">Auth managed via <code>.env</code> file.</p>
+      <div class="sidebar-spacer"></div>
+
+      <!-- Live Assist Sidebar Button -->
+      <button id="live-assist-sidebar-btn" class="live-assist-btn" title="Open Live Assist">
+        <span class="live-assist-btn__icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="9" y="1" width="6" height="13" rx="3" fill="currentColor"/>
+            <path d="M5 10a7 7 0 0 0 14 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <line x1="12" y1="17" x2="12" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <line x1="8" y1="21" x2="16" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <span>Live Assist</span>
+        <span class="live-assist-btn__dot"></span>
+      </button>
+
+      <button id="clear-btn">Clear Chat</button>
+    </aside>
+    
+    <main class="chat-container">
+      <header class="chat-header">
+        <h1>Axiom</h1>
+        <p>Talk to the most versatile open model</p>
+      </header>
+      
+      <div class="chat-history" id="chat-history">
+        <!-- Messages will appear here -->
+        <div class="message ai-message">
+          <div class="message-content">Hello! I'm Axiom. How can I help you today?</div>
+        </div>
+      </div>
+      
+      <div class="chat-input-area">
+        <textarea id="chat-input" placeholder="Type your message... (Press Enter to Send)" rows="1"></textarea>
+        <button id="stop-btn" style="display:none;" title="Stop">
+          <svg width="20" height="20" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="2" fill="currentColor"/></svg>
+        </button>
+        <button id="send-btn" title="Send">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M2.01 21L23 12L2.01 3L2 10l15 2l-15 2z" fill="currentColor"/>
+          </svg>
+        </button>
+      </div>
+    </main>
+  </div>
+
+  <!-- ═══ Live Assist Panel ═══════════════════════════════════════════════════ -->
+  <div id="live-assist-panel" class="live-assist-panel">
+    <div class="live-assist-panel__inner">
+
+      <!-- Header -->
+      <div class="la-header">
+        <div class="la-header__title">
+          <span class="la-header__badge">●&nbsp;LIVE</span>
+          <span class="la-header__name">Axiom Live Assist</span>
+        </div>
+        <button id="live-assist-close" class="la-close-btn" title="Close panel">
+          <svg width="18" height="18" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+
+      <!-- Visualizer orb + waveform -->
+      <div class="la-visualizer">
+        <div class="la-orb">
+          <div class="la-orb__ring la-orb__ring--1"></div>
+          <div class="la-orb__ring la-orb__ring--2"></div>
+          <div class="la-orb__ring la-orb__ring--3"></div>
+          <div class="la-orb__core">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+              <rect x="9" y="1" width="6" height="13" rx="3" fill="white"/>
+              <path d="M5 10a7 7 0 0 0 14 0" stroke="white" stroke-width="2" stroke-linecap="round"/>
+              <line x1="12" y1="17" x2="12" y2="21" stroke="white" stroke-width="2" stroke-linecap="round"/>
+              <line x1="8" y1="21" x2="16" y2="21" stroke="white" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Waveform bars -->
+        <div class="waveform">
+          <div class="waveform-bar" style="--i:1"></div>
+          <div class="waveform-bar" style="--i:2"></div>
+          <div class="waveform-bar" style="--i:3"></div>
+          <div class="waveform-bar" style="--i:4"></div>
+          <div class="waveform-bar" style="--i:5"></div>
+          <div class="waveform-bar" style="--i:6"></div>
+          <div class="waveform-bar" style="--i:7"></div>
+        </div>
+      </div>
+
+      <!-- Status text -->
+      <p id="live-assist-status" class="la-status">Ready to start</p>
+
+      <!-- Transcript -->
+      <div id="live-assist-transcript" class="la-transcript">
+        <p class="la-transcript__placeholder">Your conversation will appear here.</p>
+      </div>
+
+      <!-- Actions -->
+      <div class="la-actions">
+        <button id="live-assist-toggle" class="la-start-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <rect x="9" y="1" width="6" height="13" rx="3" fill="currentColor"/>
+            <path d="M5 10a7 7 0 0 0 14 0" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <line x1="12" y1="17" x2="12" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          Start Session
+        </button>
+      </div>
+
+      <!-- Info row -->
+      <p class="la-info">Streams mic audio &amp; screen frames · powered by Gemini Live</p>
+    </div>
+  </div>
+  <!-- Dim overlay when panel is open -->
+  <div id="live-assist-backdrop" class="live-assist-backdrop"></div>
+
+  <script src="renderer.js"></script>
+  <script src="live-assist.js"></script>
+</body>
+</html>
