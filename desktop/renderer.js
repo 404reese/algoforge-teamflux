@@ -129,6 +129,15 @@ async function sendMessage() {
     chatInputObj.style.height = 'auto';
     setRunningState(true);
 
+    // ── Zepto/grocery keyword interception ────────────────────────────────────────
+    const blinkitKeywords = ['blinkit', 'zepto', 'buy ingredients', 'order groceries'];
+    if (blinkitKeywords.some(kw => text.toLowerCase().includes(kw))) {
+        setRunningState(false);
+        BlinkitUI.startFlow(text);
+        return;
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
     // Show live status bubble
     createStatusBubble();
     addStatusStep('Thinking…', 'running');
@@ -202,3 +211,272 @@ chatInputObj.addEventListener('keydown', (e) => {
         sendMessage();
     }
 });
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  BLINKIT UI CONTROLLER
+// ═══════════════════════════════════════════════════════════════════════════
+
+const BlinkitUI = (() => {
+    // ─── DOM refs ────────────────────────────────────────────────────────────
+    const modal            = document.getElementById('blinkit-modal');
+    const dishNameEl       = document.getElementById('blinkit-dish-name');
+    const ingredientList   = document.getElementById('blinkit-ingredient-list');
+    const confirmBtn       = document.getElementById('blinkit-confirm-btn');
+    const cancelBtn        = document.getElementById('blinkit-cancel-btn');
+    const modalCloseBtn    = document.getElementById('blinkit-modal-close');
+    const progressPanel    = document.getElementById('blinkit-progress');
+    const progressDish     = document.getElementById('blinkit-progress-dish');
+    const progressItems    = document.getElementById('blinkit-progress-items');
+    const progressFooter   = document.getElementById('blinkit-progress-footer');
+    const abortBtn         = document.getElementById('blinkit-abort-btn');
+    const closePanelBtn    = document.getElementById('blinkit-close-btn');
+
+    let aborted = false;
+    let currentDish = '';
+    let skipCurrent = false;
+
+    // ─── Show ingredient modal ────────────────────────────────────────────────
+    function showModal(dish, ingredients) {
+        currentDish = dish;
+        dishNameEl.textContent = dish;
+        ingredientList.innerHTML = '';
+
+        if (!ingredients || ingredients.length === 0) {
+            ingredientList.innerHTML = '<p style="padding:12px;color:#6b7280;font-family:var(--font-inter);font-size:0.85rem">No ingredients found. Try again.</p>';
+        } else {
+            ingredients.forEach((item, i) => {
+                const row = document.createElement('div');
+                row.className = 'blinkit-ingredient-item';
+                row.id = `blinkit-item-check-${i}`;
+
+                const cb = document.createElement('input');
+                cb.type = 'checkbox';
+                cb.checked = true;
+                cb.id = `blinkit-cb-${i}`;
+
+                const label = document.createElement('label');
+                label.htmlFor = `blinkit-cb-${i}`;
+
+                const nameSpan = document.createElement('span');
+                nameSpan.className = 'blinkit-item-name';
+                nameSpan.textContent = item.name;
+
+                const qtySpan = document.createElement('span');
+                qtySpan.className = 'blinkit-item-qty';
+                qtySpan.textContent = item.qty || '';
+
+                label.appendChild(nameSpan);
+                label.appendChild(qtySpan);
+                row.appendChild(cb);
+                row.appendChild(label);
+
+                // Toggle dim on uncheck
+                cb.addEventListener('change', () => {
+                    row.classList.toggle('unchecked', !cb.checked);
+                });
+
+                ingredientList.appendChild(row);
+            });
+        }
+
+        modal.style.display = 'flex';
+    }
+
+    function hideModal() {
+        modal.style.display = 'none';
+    }
+
+    // ─── Extract checked ingredients ──────────────────────────────────────────
+    function getCheckedIngredients(ingredients) {
+        return ingredients.filter((_, i) => {
+            const cb = document.getElementById(`blinkit-cb-${i}`);
+            return cb && cb.checked;
+        });
+    }
+
+    // ─── Show progress panel ─────────────────────────────────────────────────
+    function showProgressPanel(dish, items) {
+        progressDish.textContent = dish;
+        progressItems.innerHTML = '';
+        progressFooter.style.display = 'none';
+        progressPanel.style.display = 'block';
+
+        // Create rows for all items upfront (pending state)
+        items.forEach((item, i) => {
+            const row = createItemRow(item.name, 'pending', '○', '', i);
+            progressItems.appendChild(row);
+        });
+    }
+
+    function createItemRow(name, state, icon, detail, idx) {
+        const row = document.createElement('div');
+        row.className = `blinkit-item-row blinkit-item-row--${state}`;
+        row.id = `blinkit-row-${idx}`;
+
+        const statusEl = document.createElement('div');
+        statusEl.className = 'blinkit-item-status';
+        statusEl.id = `blinkit-status-${idx}`;
+        statusEl.textContent = icon;
+
+        const info = document.createElement('div');
+        info.className = 'blinkit-item-info';
+
+        const nameEl = document.createElement('div');
+        nameEl.className = 'blinkit-item-info-name';
+        nameEl.textContent = name;
+
+        const detailEl = document.createElement('div');
+        detailEl.className = 'blinkit-item-info-detail';
+        detailEl.id = `blinkit-detail-${idx}`;
+        detailEl.textContent = detail;
+
+        info.appendChild(nameEl);
+        info.appendChild(detailEl);
+
+        const skipBtn = document.createElement('button');
+        skipBtn.className = 'blinkit-skip-btn';
+        skipBtn.id = `blinkit-skip-${idx}`;
+        skipBtn.textContent = 'Skip';
+        skipBtn.style.display = state === 'running' ? 'block' : 'none';
+        skipBtn.addEventListener('click', () => { skipCurrent = true; });
+
+        row.appendChild(statusEl);
+        row.appendChild(info);
+        row.appendChild(skipBtn);
+
+        return row;
+    }
+
+    function updateItemRow(idx, state, icon, detail) {
+        const row = document.getElementById(`blinkit-row-${idx}`);
+        const statusEl = document.getElementById(`blinkit-status-${idx}`);
+        const detailEl = document.getElementById(`blinkit-detail-${idx}`);
+        const skipBtn  = document.getElementById(`blinkit-skip-${idx}`);
+        if (!row) return;
+
+        row.className = `blinkit-item-row blinkit-item-row--${state}`;
+        if (statusEl) statusEl.innerHTML = icon;   // innerHTML so spinner <span> renders
+        if (detailEl) detailEl.textContent = detail;
+        if (skipBtn)  skipBtn.style.display = state === 'running' ? 'block' : 'none';
+
+        progressItems.scrollTop = progressItems.scrollHeight;
+    }
+
+    // ─── Main ordering flow ───────────────────────────────────────────────────
+    async function runOrderFlow(dish, ingredients) {
+        aborted = false;
+        hideModal();
+        showProgressPanel(dish, ingredients);
+
+        // Open Blinkit
+        const openResult = await window.electronAPI.blinkit.open();
+        if (openResult.error) {
+            progressItems.innerHTML = `<div class="blinkit-item-row blinkit-item-row--error">
+                <div class="blinkit-item-status">✗</div>
+                <div class="blinkit-item-info"><div class="blinkit-item-info-name">Failed to open Blinkit</div>
+                <div class="blinkit-item-info-detail">${openResult.error}</div></div></div>`;
+            progressFooter.style.display = 'flex';
+            return;
+        }
+
+        // Add each item
+        for (let i = 0; i < ingredients.length; i++) {
+            if (aborted) break;
+
+            const item = ingredients[i];
+            skipCurrent = false;
+
+            // Mark as running
+            updateItemRow(i, 'running', '<span class="blinkit-spinner"></span>', 'Searching…');
+
+            // Wait a moment to let skip register if needed
+            await new Promise(r => setTimeout(r, 400));
+            if (aborted) break;
+            if (skipCurrent) {
+                updateItemRow(i, 'skipped', '⟳', 'Skipped');
+                continue;
+            }
+
+            const result = await window.electronAPI.blinkit.addItem(item.name);
+
+            if (aborted) break;
+
+            if (result.success) {
+                updateItemRow(i, 'success', '✓', result.detail || 'Added to cart');
+            } else {
+                updateItemRow(i, 'error', '✗', result.detail || 'Not found');
+            }
+
+            // Small pause between items
+            await new Promise(r => setTimeout(r, 600));
+        }
+
+        if (!aborted) {
+            // All done
+            progressFooter.style.display = 'flex';
+            appendMessage('assistant',
+                `🛒 <strong>Zepto order prepared for &ldquo;${dish}&rdquo;</strong><br>
+                ${ingredients.length} item(s) processed. <em>Please log in on Zepto to complete your checkout!</em>`,
+                true
+            );
+        }
+    }
+
+    // ─── Public: start flow from text input ──────────────────────────────────
+    async function startFlow(userText) {
+        dishNameEl.textContent = 'Loading…';
+        ingredientList.innerHTML = '<p style="padding:12px;color:#6b7280;font-family:var(--font-inter);font-size:0.85rem">⏳ Extracting ingredients…</p>';
+        modal.style.display = 'flex';
+
+        const result = await window.electronAPI.blinkit.getIngredients(userText);
+
+        if (result.error) {
+            dishNameEl.textContent = 'Error';
+            ingredientList.innerHTML = `<p style="padding:12px;color:#ef4444;font-size:0.85rem">${result.error}</p>`;
+            return;
+        }
+
+        showModal(result.dish, result.ingredients);
+    }
+
+    // ─── Event wiring ──────────────────────────────────────────────────────────
+    cancelBtn.addEventListener('click', hideModal);
+    modalCloseBtn.addEventListener('click', hideModal);
+
+    confirmBtn.addEventListener('click', async () => {
+        // Collect checked items from current ingredient list
+        const items = [];
+        ingredientList.querySelectorAll('.blinkit-ingredient-item').forEach((row, i) => {
+            const cb = row.querySelector('input[type="checkbox"]');
+            if (cb && cb.checked) {
+                const name = row.querySelector('.blinkit-item-name')?.textContent || '';
+                const qty  = row.querySelector('.blinkit-item-qty')?.textContent  || '';
+                items.push({ name, qty });
+            }
+        });
+        if (items.length === 0) { hideModal(); return; }
+        runOrderFlow(currentDish, items);
+    });
+
+    abortBtn.addEventListener('click', async () => {
+        aborted = true;
+        await window.electronAPI.blinkit.close();
+        progressPanel.style.display = 'none';
+        appendMessage('assistant', '🛒 Zepto order aborted.');
+    });
+
+    closePanelBtn.addEventListener('click', () => {
+        progressPanel.style.display = 'none';
+    });
+
+    // ─── Listen for Live Assist trigger ──────────────────────────────────────
+    window.electronAPI.blinkit.onShowModal(({ dish, ingredients, error }) => {
+        if (error) {
+            appendMessage('assistant', `⚠️ Blinkit: ${error}`);
+            return;
+        }
+        showModal(dish, ingredients);
+    });
+
+    return { startFlow };
+})();

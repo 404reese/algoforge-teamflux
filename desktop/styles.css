@@ -522,3 +522,260 @@ body {
 
 /* ─── Info line ──────────────────────────────────────────── */
 .la-info { font-family: var(--font-inter); font-size: 0.72rem; color: rgba(255,255,255,0.2); text-align: center; letter-spacing: 0.02em; }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   BLINKIT — Ingredient Confirmation Modal
+═══════════════════════════════════════════════════════════════ */
+
+.blinkit-modal {
+  position: fixed; inset: 0; z-index: 200;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.blinkit-modal__backdrop {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(6px);
+}
+
+.blinkit-modal__card {
+  position: relative; z-index: 1;
+  background: #ffffff;
+  border-radius: 20px;
+  width: min(480px, 92vw);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.22), 0 0 0 1px rgba(0,0,0,0.06);
+  overflow: hidden;
+  animation: blinkitSlideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes blinkitSlideIn {
+  from { opacity: 0; transform: translateY(24px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.blinkit-modal__header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20px 22px 16px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-bottom: 3px solid #ffd700;
+}
+
+.blinkit-modal__logo {
+  display: flex; align-items: center; gap: 12px;
+}
+
+.blinkit-logo-icon {
+  font-size: 1.6rem; line-height: 1;
+}
+
+.blinkit-modal__title {
+  font-family: var(--font-title);
+  font-size: 0.7rem; letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+}
+
+.blinkit-modal__dish {
+  font-family: var(--font-inter);
+  font-size: 1.1rem; font-weight: 700;
+  color: #ffd700;
+  margin-top: 2px;
+}
+
+.blinkit-close-btn {
+  width: 30px; height: 30px; border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.6);
+  cursor: pointer; font-size: 0.9rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.2s;
+}
+.blinkit-close-btn:hover { background: rgba(255,255,255,0.18); color: white; }
+
+.blinkit-modal__subtitle {
+  font-family: var(--font-inter);
+  font-size: 0.82rem; color: #6b7280;
+  padding: 14px 22px 10px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+/* ─── Ingredient List ─────────────────────────────────────── */
+.blinkit-ingredient-list {
+  max-height: 280px; overflow-y: auto;
+  padding: 8px 18px;
+  display: flex; flex-direction: column; gap: 4px;
+  scrollbar-width: thin; scrollbar-color: #e5e7eb transparent;
+}
+
+.blinkit-ingredient-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: 10px;
+  background: #f9fafb; border: 1px solid transparent;
+  cursor: pointer; transition: all 0.18s;
+  animation: fadeSlideIn 0.2s ease-out;
+}
+.blinkit-ingredient-item:hover { background: #f0fdf4; border-color: #86efac; }
+
+.blinkit-ingredient-item input[type="checkbox"] {
+  width: 17px; height: 17px; accent-color: #16a34a;
+  cursor: pointer; flex-shrink: 0;
+}
+
+.blinkit-ingredient-item label {
+  display: flex; align-items: center; justify-content: space-between;
+  flex: 1; cursor: pointer;
+}
+
+.blinkit-item-name {
+  font-family: var(--font-inter); font-size: 0.9rem;
+  font-weight: 500; color: #111827;
+}
+
+.blinkit-item-qty {
+  font-family: var(--font-inter); font-size: 0.78rem;
+  color: #6b7280; background: #e5e7eb;
+  padding: 2px 8px; border-radius: 20px;
+}
+
+.blinkit-ingredient-item.unchecked {
+  opacity: 0.45;
+}
+
+/* ─── Modal Footer ────────────────────────────────────────── */
+.blinkit-modal__footer {
+  display: flex; gap: 10px; align-items: center;
+  padding: 16px 22px; border-top: 1px solid #f3f4f6;
+  background: #fafafa;
+}
+
+.blinkit-btn {
+  padding: 11px 22px; border-radius: 12px;
+  font-family: var(--font-inter); font-size: 0.9rem; font-weight: 600;
+  cursor: pointer; border: none; transition: all 0.2s;
+  display: flex; align-items: center; gap: 6px;
+}
+
+.blinkit-btn--ghost {
+  background: none; border: 1px solid #e5e7eb; color: #6b7280;
+}
+.blinkit-btn--ghost:hover { border-color: #9ca3af; color: #111827; background: #f3f4f6; }
+
+.blinkit-btn--primary {
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  color: white; flex: 1; justify-content: center;
+  box-shadow: 0 4px 16px rgba(22, 163, 74, 0.35);
+}
+.blinkit-btn--primary:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(22, 163, 74, 0.5); }
+.blinkit-btn--primary:active { transform: translateY(1px); }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   BLINKIT — Cart Progress Panel
+═══════════════════════════════════════════════════════════════ */
+
+.blinkit-progress {
+  position: fixed; bottom: 24px; right: 24px;
+  width: 340px; z-index: 150;
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.18), 0 0 0 1px rgba(0,0,0,0.06);
+  overflow: hidden;
+  animation: blinkitSlideIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.blinkit-progress__header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-bottom: 3px solid #ffd700;
+}
+
+.blinkit-progress__title {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--font-inter); font-size: 0.88rem; font-weight: 600;
+  color: white;
+}
+
+.blinkit-progress__dish-tag {
+  font-size: 0.72rem; background: rgba(255,215,0,0.18);
+  color: #ffd700; padding: 2px 8px; border-radius: 20px;
+  border: 1px solid rgba(255,215,0,0.3);
+  max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.blinkit-abort-btn {
+  font-family: var(--font-inter); font-size: 0.75rem;
+  padding: 5px 12px; border-radius: 8px; border: 1px solid rgba(239,68,68,0.5);
+  background: rgba(239,68,68,0.1); color: #fca5a5;
+  cursor: pointer; transition: all 0.2s;
+}
+.blinkit-abort-btn:hover { background: rgba(239,68,68,0.2); color: #f87171; }
+
+/* ─── Progress Item Cards ─────────────────────────────────── */
+.blinkit-progress__items {
+  max-height: 300px; overflow-y: auto;
+  padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;
+  scrollbar-width: thin; scrollbar-color: #e5e7eb transparent;
+}
+
+.blinkit-item-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: 10px;
+  background: #f9fafb; border: 1px solid #f3f4f6;
+  font-family: var(--font-inter); font-size: 0.85rem;
+  animation: fadeSlideIn 0.2s ease-out;
+  transition: all 0.3s;
+}
+
+.blinkit-item-row--pending  { color: #9ca3af; }
+.blinkit-item-row--running  { background: #eff6ff; border-color: #93c5fd; color: #1d4ed8; }
+.blinkit-item-row--success  { background: #f0fdf4; border-color: #86efac; color: #15803d; }
+.blinkit-item-row--skipped  { background: #fefce8; border-color: #fde68a; color: #92400e; opacity: 0.7; }
+.blinkit-item-row--error    { background: #fef2f2; border-color: #fca5a5; color: #b91c1c; }
+
+.blinkit-item-status {
+  font-size: 1rem; flex-shrink: 0; width: 20px; text-align: center;
+}
+
+.blinkit-item-info { flex: 1; display: flex; flex-direction: column; gap: 1px; }
+.blinkit-item-info-name { font-weight: 600; font-size: 0.85rem; }
+.blinkit-item-info-detail { font-size: 0.72rem; opacity: 0.7; }
+
+.blinkit-skip-btn {
+  font-family: var(--font-inter); font-size: 0.7rem;
+  padding: 3px 10px; border-radius: 6px;
+  border: 1px solid #d1d5db; background: white; color: #374151;
+  cursor: pointer; transition: all 0.15s; flex-shrink: 0;
+}
+.blinkit-skip-btn:hover { border-color: #f59e0b; color: #b45309; }
+
+/* ─── Progress Footer ─────────────────────────────────────── */
+.blinkit-progress__footer {
+  padding: 14px 14px; border-top: 1px solid #f3f4f6;
+  display: flex; flex-direction: column; gap: 10px;
+}
+
+.blinkit-done-banner {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 12px; border-radius: 10px;
+  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+  border: 1px solid #86efac;
+  font-family: var(--font-inter); font-size: 0.88rem;
+}
+
+.blinkit-done-banner span:first-child { font-weight: 700; color: #15803d; }
+.blinkit-done-hint { font-size: 0.78rem; color: #4b7c5a; }
+
+/* ─── Loading spinner for blinkit ────────────────────────── */
+@keyframes blinkitSpin {
+  to { transform: rotate(360deg); }
+}
+.blinkit-spinner {
+  display: inline-block; width: 14px; height: 14px;
+  border: 2px solid #93c5fd; border-top-color: #1d4ed8;
+  border-radius: 50%;
+  animation: blinkitSpin 0.8s linear infinite;
+}
+
